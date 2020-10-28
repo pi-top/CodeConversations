@@ -3,7 +3,7 @@
   "manifestVersion": "1.5",
   "version": "1.0.1",
   "id": "{BOT_MICROSOFT_APP_ID}",
-  "packageName": "com.microsoft.codeconversations",
+  "packageName": "com.pi-top.rover",
   "developer": {
     "name": "pi-top & Microsoft",
     "websiteUrl": "https://pi-top.com",
@@ -18,14 +18,14 @@
     "outline": "rover.png"
   },
   "name": {
-    "short": "pi-top Rover Bot",
-    "full": "Collaborative robot behaviours coding"
+    "short": "Rover",
+    "full": "pi-top [4] Rover Bot"
   },
   "description": {
-    "short": "pi-top Rover Bot",
+    "short": "Collaborative rover coding with pi-top [4]",
     "full": "pi-top Rover Bot allows you to interactively code rover behaviours. Paste your code into a message in a markdown code fence, then use the '@Code' messaging extension to run the code using .NET Interactive."
   },
-  "accentColor": "#FFFFFF",
+  "accentColor": "#00AD9F",
   "bots": [
     {
       "botId": "{BOT_MICROSOFT_APP_ID}",
