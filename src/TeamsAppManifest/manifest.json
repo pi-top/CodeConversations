@@ -6,9 +6,9 @@
   "packageName": "com.microsoft.codeconversations",
   "developer": {
     "name": "pi-top & Microsoft",
-    "websiteUrl": "https://{REPLACE-WITH-BOT-DOMAIN}",
-    "privacyUrl": "https://{REPLACE-WITH-BOT-DOMAIN}/privacy",
-    "termsOfUseUrl": "https://{REPLACE-WITH-BOT-DOMAIN}/termsofuse"
+    "websiteUrl": "https://pi-top.com",
+    "privacyUrl": "https://pi-top.com",
+    "termsOfUseUrl": "https://pi-top.com"
   },
   "validDomains": [
     "{REPLACE-WITH-BOT-DOMAIN}"
