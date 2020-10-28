@@ -116,7 +116,7 @@ namespace CodeConversations.Bots
                         EnvelopeHelper.StoreEnvelope(submissionToken, envelope);
                         var cardSent = false;
                         channel
-                            .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(1)))
+                            .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(3)))
                             .Buffer(TimeSpan.FromSeconds(1))
                             .Subscribe(
                          onNext: async formattedValues =>
