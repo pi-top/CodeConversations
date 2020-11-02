@@ -91,7 +91,7 @@ namespace CodeConversations.Bots
                         if (UserGame.CurrentChatUser?.Id != user.Id)
                         {
                             UserGame.CurrentChatUser = user;
-                            messageText = $"Hey {mention.Text} It looks like you're typing some code. Let me run it for you! 😊";
+                            messageText = $"Hey {mention.Text} - I've detected that you have written some code!\r\n```{code}```\r\nLet me run that for you! 😊";
                         }
                         else
                         {
@@ -149,8 +149,8 @@ namespace CodeConversations.Bots
                                          }
                                          else
                                          {
-                                             var content = string.Join("\n", formattedValues.Select(f => f.Value));
-                                             var message = MessageFactory.Text($"```\n{content}");
+                                             var content = string.Join("\r\n", formattedValues.Select(f => f.Value));
+                                             var message = MessageFactory.Text($"```\r\n{content}");
                                              context.SendActivityAsync(message, token).Wait();
                                          }
                                      }
@@ -162,7 +162,7 @@ namespace CodeConversations.Bots
                              await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
                              {
                                  await Task.Delay(1000);
-                                 var message = MessageFactory.Text($"{mention.Text} all done here 👍");
+                                 var message = MessageFactory.Text($"Good news, {mention.Text}! I'm all done here 👍");
                                  message.Entities.Add(mention);
                                  await context.SendActivityAsync(message, token);
                              }, cancellationToken);
@@ -172,7 +172,7 @@ namespace CodeConversations.Bots
                                await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
                                {
                                    await Task.Delay(1000);
-                                   var message = MessageFactory.Text($@"{mention.Text} there were some issues 👎 :\n {error.Message}");
+                                   var message = MessageFactory.Text($"Hate to break this to you {mention.Text}, but there were some issues... 👎\r\n```{error.Message}```");
                                    message.Entities.Add(mention);
                                    await context.SendActivityAsync(message, token);
                                }, cancellationToken);
@@ -185,7 +185,7 @@ namespace CodeConversations.Bots
                     {
                         await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
                         {
-                            var message = MessageFactory.Text($"Sorry {mention.Text} cannot execute your code now. 😓");
+                            var message = MessageFactory.Text($"Sorry {mention.Text}, but I cannot execute your code right now. 😓");
                             message.Entities.Add(mention);
                             await context.SendActivityAsync(message, token);
                         }, cancellationToken);
@@ -205,7 +205,7 @@ namespace CodeConversations.Bots
                         await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference,
                             async (context, token) =>
                             {
-                                var message = MessageFactory.Text($"{mention.Text} back at you my friend! 👊");
+                                var message = MessageFactory.Text($"Right back at ya, {mention.Text}! 👊");
                                 message.Entities.Add(mention);
                                 await context.SendActivityAsync(message, token);
                             }, cancellationToken);
