@@ -211,6 +211,16 @@ namespace CodeConversations.Bots
                             }, cancellationToken);
                     }
                 }
+                else if (content.Contains("Hello"))
+                {
+                    var mentioned = turnContext.Activity.GetMentions()?.FirstOrDefault(m => m.Mentioned.Id.EndsWith(_botId));
+                    if (mentioned != null)
+                    {
+                        var card = CardUtilities.CreateAdaptiveCardAttachment(CardJsonFiles.IntroduceRover);
+                        var attach = MessageFactory.Attachment(card);
+                        await turnContext.SendActivityAsync(attach, cancellationToken);
+                    }
+                }
             }
             else
             {
@@ -229,9 +239,12 @@ namespace CodeConversations.Bots
                 }
                 else if (((JObject)userAction).Value<string>("userAction").Equals("BlinkLights"))
                 {
-                    if (string.IsNullOrWhiteSpace(DotNetInteractiveProcessRunner.Instance.SessionLanguage))
+                    if (DotNetInteractiveProcessRunner.Instance.CanExecuteCode)
                     {
+                        var conversationReference = turnContext.Activity.GetConversationReference();
+                        var submissionToken = Guid.NewGuid().ToString("N");
                         var submitCode = new SubmitCode("roverBody.BlinkAllLights();");
+
                         submitCode.SetToken(submissionToken);
                         var envelope = KernelCommandEnvelope.Create(submitCode);
                         var channel = ContentSubjectHelper.GetOrCreateChannel(submissionToken);
@@ -241,12 +254,15 @@ namespace CodeConversations.Bots
                             .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(3)))
                             .Buffer(TimeSpan.FromSeconds(1))
                             .Subscribe(
+                               onNext: async formattedValues =>
+                               {
+                               },
                                onCompleted: async () =>
                                {
                                    await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
                                    {
-                                       await Task.Delay(1000);
-                                       var message = MessageFactory.Text($"Don't I look great! Ok, now let's write some C# code and show off what we can achieve together!🤘🏻");
+                                       await Task.Delay(2000);
+                                       var message = MessageFactory.Text($"Don't I look great! Ok, now let's write some C# code and show off what we can achieve together! 🤘🏻");
                                        await context.SendActivityAsync(message, token);
                                    }, cancellationToken);
                                },
