@@ -35,7 +35,9 @@ namespace CodeConversations.Workers
         {
             logger.LogInformation("Starting up.");
 
-            var startInfo = new ProcessStartInfo("dotnet", "interactive stdio --default-kernel csharp")
+            // var startInfo = new ProcessStartInfo("dotnet", "interactive stdio --default-kernel csharp")
+            // var startInfo = new ProcessStartInfo("dotnet", "interactive stdio --default-kernel csharp --verbose --log-path /home/pi/dotnet.log")
+            var startInfo = new ProcessStartInfo("dotnet", "/home/pi/pi-top-4-.NET-Core-API/src/Examples/PiTop.Interactive.Rover/bin/Debug/netcoreapp3.1/PiTop.Interactive.Rover.dll --http-port 1024")
             {
                 UseShellExecute = false,
                 RedirectStandardInput = true,

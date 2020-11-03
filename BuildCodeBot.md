@@ -9,14 +9,28 @@ The list of things you'll need if you'd like to tinker with the code for the pro
 1. [ngrok](https://ngrok.com/) is used to enable localhost debugging and testing. If you're not familiar with ngrok, you can find documentation on setting up an ngrok tunnel to aid in your Bot development [here](https://github.com/Microsoft/BotFramework-Emulator/wiki/Tunneling-(ngrok)).
 1. [Visual Studio 2019](https://visualstudio.microsoft.com/) Community or greater editions.
 
-## Running Locally
+## Running Locally (on a pi-top!)
 
 If you have no experience whatsoever building Teams apps or have never used the Microsoft Bot Framework to build a bot, the process of getting the code running would probably take about an hour. This section will walk through the entire process, from cloning the repository to getting the Code Conversations bot running locally.
 
 1. Clone this repository.
 
     ```bash
-    git clone https://github.com/bradygaster/CodeConversations.git
+    git clone https://github.com/pi-top/Rover-MS-Teams-Bot.git
+    ```
+
+1. Install pi-top-4-.NET-Core-API in `/home/pi`.
+
+    ```bash
+    curl -L https://raw.githubusercontent.com/pi-top/pi-top-4-.NET-Core-API/master/setup.sh | bash
+    source ~/.bashrc
+    ```
+
+1. Build pi-top-4-.NET-Core-API
+
+    ```bash
+    cd pi-top-4-.NET-Core-API
+    dotnet build src/pi-top.sln
     ```
 
 1. In the [Azure portal](https://portal.azure.com), click the + sign to create a new resource. Then, search for "bot" and select **Bot Channels Registration**.
