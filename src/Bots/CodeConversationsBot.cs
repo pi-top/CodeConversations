@@ -56,8 +56,8 @@ namespace CodeConversations.Bots
             CancellationToken cancellationToken)
         {
             await base.OnTeamsMembersAddedAsync(teamsMembersAdded, teamInfo, turnContext, cancellationToken);
-            DotNetInteractiveProcessRunner.Instance.SessionLanguage = null;
-            var card = CardUtilities.CreateAdaptiveCardAttachment(CardJsonFiles.SelectLanguage);
+            DotNetInteractiveProcessRunner.Instance.SessionLanguage = "csharp";
+            var card = CardUtilities.CreateAdaptiveCardAttachment(CardJsonFiles.IntroduceRover);
             var attach = MessageFactory.Attachment(card);
             await turnContext.SendActivityAsync(attach);
         }
@@ -225,6 +225,42 @@ namespace CodeConversations.Bots
                         var languageLabel = ((JObject)userAction).Value<string>("languageLabel");
                         var message = MessageFactory.Text($"All set. Let's write some {DotNetInteractiveProcessRunner.Instance.SessionLanguage} code together! 🤘🏻");
                         await turnContext.SendActivityAsync(message, cancellationToken);
+                    }
+                }
+                else if (((JObject)userAction).Value<string>("userAction").Equals("BlinkLights"))
+                {
+                    if (string.IsNullOrWhiteSpace(DotNetInteractiveProcessRunner.Instance.SessionLanguage))
+                    {
+                        var submitCode = new SubmitCode("roverBody.BlinkAllLights();");
+                        submitCode.SetToken(submissionToken);
+                        var envelope = KernelCommandEnvelope.Create(submitCode);
+                        var channel = ContentSubjectHelper.GetOrCreateChannel(submissionToken);
+                        EnvelopeHelper.StoreEnvelope(submissionToken, envelope);
+
+                        channel
+                            .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(3)))
+                            .Buffer(TimeSpan.FromSeconds(1))
+                            .Subscribe(
+                               onCompleted: async () =>
+                               {
+                                   await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
+                                   {
+                                       await Task.Delay(1000);
+                                       var message = MessageFactory.Text($"Don't I look great! Ok, now let's write some C# code and show off what we can achieve together!🤘🏻");
+                                       await context.SendActivityAsync(message, token);
+                                   }, cancellationToken);
+                               },
+                               onError: async error =>
+                               {
+                                   await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
+                                   {
+                                       await Task.Delay(1000);
+                                       var message = MessageFactory.Text($"Hmm, having trouble blinking my lights... 👎\r\n```{error.Message}```");
+                                       await context.SendActivityAsync(message, token);
+                                   }, cancellationToken);
+                               });
+
+                        await DotNetInteractiveProcessRunner.Instance.ExecuteEnvelope(submissionToken);
                     }
                 }
             }

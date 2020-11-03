@@ -1,0 +1,32 @@
+{
+  "type": "AdaptiveCard",
+  "body": [
+    {
+      "type": "TextBlock",
+      "size": "Medium",
+      "weight": "Bolder",
+      "text": "Hello class"
+    },
+    {
+      "type": "Container",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Thank you for inviting me here. I'm your remote pi-top Rover for today. I understand we have some resources to find. I should have all the components we'll need for that but I don't know what to do. You'll have to work together to fill my brain with C# code telling me how get the job done!",
+          "wrap": true
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "Test My Lights",
+      "data": {
+        "userAction": "BlinkLights"
+      }
+    }
+  ],
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.2"
+}
