@@ -116,7 +116,7 @@ namespace CodeConversations.Bots
                         EnvelopeHelper.StoreEnvelope(submissionToken, envelope);
                         var cardSent = false;
                         channel
-                            .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(1)))
+                            .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(3)))
                             .Buffer(TimeSpan.FromSeconds(1))
                             .Subscribe(
                          onNext: async formattedValues =>
@@ -280,7 +280,7 @@ namespace CodeConversations.Bots
         {
             var matches = Regex.Matches(messageText, regularExpression, RegexOptions.Singleline);
             var result = matches.First().Groups[2].Value;
-            return result;
+            return result.Replace("\u200B", "");
         }
     }
 }
