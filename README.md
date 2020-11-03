@@ -1,10 +1,21 @@
-# Code Conversations
+# pi-top Rover MS Teams Bot
 
-During the Microsoft Build 2020 keynote, Scott and Kayla show a demo early on in which they collaborate on some C# source code using a [Microsoft Teams](https://www.microsoft.com/en-us/microsoft-365/microsoft-teams/group-chat-software) Bot. This repository contains the code for that bot, which we call **Code Conversations**. This readme will attempt to explain just about everything you'd need to know about Code Conversations without actually looking at the code. It will also explain a little about the reasons we chose various pieces of the topology.
+Collaboratively learn robotics and .NET by interacting with a pi-top Rover through [Microsoft Teams](https://www.microsoft.com/en-us/microsoft-365/microsoft-teams/group-chat-software) chat.
+
+This is a demo for .NET Conf 2020 based on a previous [Code Conversations](https://github.com/CodeConversations/CodeConversations) Teams bot demo, but building on it integrating work from [pi-top-4-.NET-Core-API](https://github.com/pi-top/pi-top-4-.NET-Core-API) and [Lobe](https://github.com/lobe/lobe.NET).
+
+## Development & Local deployment
+Follow the instructions in [BuildCodeBot.md](BuildCodeBot.md).
 
 ## How it works
 
 Code Conversations was designed with one goal in mind - to see if we could bring the power of [.NET Interactive](https://github.com/dotnet/interactive) into [Microsoft Teams](https://www.microsoft.com/en-us/microsoft-365/microsoft-teams/group-chat-software), to create a way for people to have collaborative conversations about small bits of code they could edit and run directly within the Teams message thread.
+
+pi-top Rover MS Teams Bot builds on this primarily by loading up the dotnet
+interactive runner with a preconfigured pi-top[4] Rover, enabling easy
+interaction with it's `roverBody` components, and `robotBrain` intelligent
+agenct strategies. More information on this rover interface can be found
+[here](https://github.com/pi-top/pi-top-4-.NET-Core-API/tree/master/src/Examples/PiTop.Interactive.Rover).
 
 ### The Bot
 
