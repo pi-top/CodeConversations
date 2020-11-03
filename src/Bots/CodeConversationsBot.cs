@@ -241,6 +241,9 @@ namespace CodeConversations.Bots
                 {
                     if (DotNetInteractiveProcessRunner.Instance.CanExecuteCode)
                     {
+                        var message = MessageFactory.Text("Blinking 💡...");
+                        await turnContext.SendActivityAsync(message, cancellationToken);
+
                         var conversationReference = turnContext.Activity.GetConversationReference();
                         var submissionToken = Guid.NewGuid().ToString("N");
                         var submitCode = new SubmitCode("roverBody.BlinkAllLights();");
