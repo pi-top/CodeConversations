@@ -127,8 +127,18 @@ namespace CodeConversations.Bots
                                      if (formattedValues.Count > 0)
                                      {
                                          var hasHtml = formattedValues.Any(f => f.MimeType == HtmlFormatter.MimeType);
-
-                                         if (hasHtml)
+                                         if (hasHtml && formattedValues.Count == 1 && IsFormattedValueImage(formattedValues.ElementAt(0)))
+                                         {
+                                           string src = GetSrcFromImageHtml(formattedValues.ElementAt(0).Value);
+                                           var attachment = new Attachment
+                                           {
+                                             ContentType = "image/*",
+                                             ContentUrl = src,
+                                           };
+                                           var message = MessageFactory.Attachment(attachment);
+                                           context.SendActivityAsync(message, token).Wait();
+                                         }
+                                         else if (hasHtml)
                                          {
                                              if (!cardSent)
                                              {
@@ -336,6 +346,26 @@ namespace CodeConversations.Bots
             var matches = Regex.Matches(messageText, regularExpression, RegexOptions.Singleline);
             var result = matches.First().Groups[2].Value;
             return result.Replace("\u200B", "");
+        }
+
+        private bool IsFormattedValueImage(FormattedValue formattedValue)
+        {
+            string imageRegex = @"^<img";
+            if (!(formattedValue.Value is string))
+            {
+                return false;
+            }
+            var matches = Regex.Matches(formattedValue.Value, imageRegex, RegexOptions.Singleline);
+            return matches.Any();
+        }
+
+        private string GetSrcFromImageHtml(string imageHtml)
+        {
+            string srcRegex = "(src=\"(.*?)\")";
+            var matches = Regex.Matches(imageHtml, srcRegex, RegexOptions.Singleline);
+            var result = matches.First().Groups[2].Value;
+            Console.WriteLine(result);
+            return result;
         }
     }
 }
