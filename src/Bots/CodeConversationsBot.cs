@@ -138,6 +138,13 @@ namespace CodeConversations.Bots
                                            var message = MessageFactory.Attachment(attachment);
                                            context.SendActivityAsync(message, token).Wait();
                                          }
+                                         else if (hasHtml && formattedValues.Count == 1 && IsFormattedValueClassification(formattedValues.ElementAt(0)))
+                                         {
+                                           var info = GetInfoFromClassificationHtml(formattedValues.ElementAt(0).Value);
+                                           var content = $"Label: {info[0]}\r\nConfidence: {info[1]}";
+                                           var message = MessageFactory.Text(content);
+                                           context.SendActivityAsync(message, token).Wait();
+                                         }
                                          else if (hasHtml)
                                          {
                                              if (!cardSent)
@@ -365,6 +372,27 @@ namespace CodeConversations.Bots
             var matches = Regex.Matches(imageHtml, srcRegex, RegexOptions.Singleline);
             var result = matches.First().Groups[2].Value;
             Console.WriteLine(result);
+            return result;
+        }
+
+        private bool IsFormattedValueClassification(FormattedValue formattedValue)
+        {
+            string classRegex = @"<tr><th>Label</th><th>Confidence</th></tr>";
+            if (!(formattedValue.Value is string))
+            {
+                return false;
+            }
+            var matches = Regex.Matches(formattedValue.Value, classRegex, RegexOptions.Singleline);
+            return matches.Any();
+        }
+
+        private string[] GetInfoFromClassificationHtml(string classHtml)
+        {
+            string valueRegex = "(dni-plaintext\">(.*?)<)";
+            var matches = Regex.Matches(classHtml, valueRegex, RegexOptions.Singleline);
+            var label = matches.First().Groups[2].Value;
+            var confidence = matches.ElementAt(1).Groups[2].Value;
+            string[] result = {label, confidence};
             return result;
         }
     }
