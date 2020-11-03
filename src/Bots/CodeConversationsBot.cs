@@ -280,7 +280,7 @@ namespace CodeConversations.Bots
         {
             var matches = Regex.Matches(messageText, regularExpression, RegexOptions.Singleline);
             var result = matches.First().Groups[2].Value;
-            return result;
+            return result.Replace("\u200B", "");
         }
     }
 }
