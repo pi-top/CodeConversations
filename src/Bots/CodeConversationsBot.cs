@@ -238,6 +238,105 @@ namespace CodeConversations.Bots
                         await turnContext.SendActivityAsync(attach, cancellationToken);
                     }
                 }
+                else if (content.Contains("help"))
+                {
+
+                    var helpTopic = GetHelpTopic(content);
+
+                    var helpCode = $@"
+                    using System.ComponentModel;
+                    using System;
+                    using System.Reflection;
+                    Console.WriteLine(""Properties: "");
+                    foreach(PropertyDescriptor descriptor in TypeDescriptor.GetProperties({helpTopic}))
+                    {{
+                            string name=descriptor.Name;
+                            // object value=descriptor.GetValue({helpTopic});
+                            Console.WriteLine(""  {{0}}"",name);
+                    }}
+                    Console.WriteLine(""Methods: "");
+                    foreach(MethodInfo method in {helpTopic}.GetType().GetMethods(BindingFlags.Static|BindingFlags.Instance|BindingFlags.Public))
+                    {{
+                            if (!char.IsLower(method.Name[0])) {{
+                                string name=method.Name;
+                                Console.WriteLine(""  {{0}}"",name);
+                            }}
+                    }}
+                    ";
+
+                    var submissionToken = Guid.NewGuid().ToString("N");
+                    var submitCode = new SubmitCode(helpCode);
+
+                    submitCode.SetToken(submissionToken);
+                    var envelope = KernelCommandEnvelope.Create(submitCode);
+                    var channel = ContentSubjectHelper.GetOrCreateChannel(submissionToken);
+                    EnvelopeHelper.StoreEnvelope(submissionToken, envelope);
+                    var cardSent = false;
+
+                    channel
+                        .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(1)))
+                        .Buffer(TimeSpan.FromSeconds(1))
+                        .Subscribe(
+                           onNext: async formattedValues =>
+                           {
+                               turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference,
+                                   (context, token) =>
+                                   {
+                                       if (formattedValues.Count > 0)
+                                       {
+                                           var hasHtml = formattedValues.Any(f => f.MimeType == HtmlFormatter.MimeType);
+                                           if (hasHtml)
+                                           {
+                                               if (!cardSent)
+                                               {
+                                                   cardSent = true;
+                                                   var card = new HeroCard
+                                                   {
+                                                       Title = "Your output is too awesome 😎",
+                                                       Subtitle = "Use the viewer to see it.",
+                                                       Buttons = new List<CardAction>
+                                                       {
+                                                          new TaskModuleAction("Open Viewer",
+                                                              new {data = submissionToken})
+                                                       },
+                                                   }.ToAttachment();
+                                                   var message = MessageFactory.Attachment(card);
+                                                   context.SendActivityAsync(message, token).Wait();
+                                               }
+                                           }
+                                           else
+                                           {
+                                               var content = string.Join("\r\n", formattedValues.Select(f => f.Value));
+                                               var message = MessageFactory.Text($"```\r\n{content}");
+                                               context.SendActivityAsync(message, token).Wait();
+                                           }
+                                       }
+
+                                       return Task.CompletedTask;
+                                   }, cancellationToken).Wait();
+                           }, onCompleted: async () =>
+                           {
+                               await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
+                               {
+                                   await Task.Delay(1000);
+                                   var message = MessageFactory.Text($"So, {mention.Text}, anything there look interesting to you?");
+                                   message.Entities.Add(mention);
+                                   await context.SendActivityAsync(message, token);
+                               }, cancellationToken);
+                           },
+                           onError: async error =>
+                           {
+                               await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
+                               {
+                                   await Task.Delay(1000);
+                                   var message = MessageFactory.Text($"Hate to break this to you {mention.Text}, but there were some issues... 👎\r\n```{error.Message}```");
+                                   message.Entities.Add(mention);
+                                   await context.SendActivityAsync(message, token);
+                               }, cancellationToken);
+                           });
+
+                        await DotNetInteractiveProcessRunner.Instance.ExecuteEnvelope(submissionToken);
+                }
             }
             else
             {
@@ -393,6 +492,14 @@ namespace CodeConversations.Bots
             var label = matches.First().Groups[2].Value;
             var confidence = matches.ElementAt(1).Groups[2].Value;
             string[] result = {label, confidence};
+            return result;
+        }
+
+        private string GetHelpTopic(string content)
+        {
+            string topicRegex = "(help (.*?)$)";
+            var matches = Regex.Matches(content, topicRegex, RegexOptions.Singleline);
+            var result = matches.First().Groups[2].Value;
             return result;
         }
     }
