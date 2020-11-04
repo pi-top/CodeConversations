@@ -91,7 +91,7 @@ namespace CodeConversations.Bots
                         if (UserGame.CurrentChatUser?.Id != user.Id)
                         {
                             UserGame.CurrentChatUser = user;
-                            messageText = $"Hey {mention.Text}! I see that you have written some code! I got \r\n```{code}```\r\n. Let me run that for you! 😊";
+                            messageText = $"Hey {mention.Text}, I see that you have written some code!\r\n I got: \r\n```{code}```\r\n Let me run that for you! 😊";
                         }
                         else
                         {
@@ -116,7 +116,7 @@ namespace CodeConversations.Bots
                         EnvelopeHelper.StoreEnvelope(submissionToken, envelope);
                         var cardSent = false;
                         channel
-                            .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(3)))
+                            .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(1)))
                             .Buffer(TimeSpan.FromSeconds(1))
                             .Subscribe(
                          onNext: async formattedValues =>
@@ -141,7 +141,7 @@ namespace CodeConversations.Bots
                                          else if (hasHtml && formattedValues.Count == 1 && IsFormattedValueClassification(formattedValues.ElementAt(0)))
                                          {
                                            var info = GetInfoFromClassificationHtml(formattedValues.ElementAt(0).Value);
-                                           var content = $"Label: {info[0]}\r\nConfidence: {info[1]}";
+                                           var content = $"**Label**: _{info[0]}_\r\n\n**Confidence**: _{info[1]}_";
                                            var message = MessageFactory.Text(content);
                                            context.SendActivityAsync(message, token).Wait();
                                          }
