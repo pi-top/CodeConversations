@@ -56,8 +56,8 @@ namespace CodeConversations.Bots
             CancellationToken cancellationToken)
         {
             await base.OnTeamsMembersAddedAsync(teamsMembersAdded, teamInfo, turnContext, cancellationToken);
-            DotNetInteractiveProcessRunner.Instance.SessionLanguage = null;
-            var card = CardUtilities.CreateAdaptiveCardAttachment(CardJsonFiles.SelectLanguage);
+            DotNetInteractiveProcessRunner.Instance.SessionLanguage = "csharp";
+            var card = CardUtilities.CreateAdaptiveCardAttachment(CardJsonFiles.IntroduceRover);
             var attach = MessageFactory.Attachment(card);
             await turnContext.SendActivityAsync(attach);
         }
@@ -91,7 +91,7 @@ namespace CodeConversations.Bots
                         if (UserGame.CurrentChatUser?.Id != user.Id)
                         {
                             UserGame.CurrentChatUser = user;
-                            messageText = $"Hey {mention.Text}! I see that you have written some code! I got \r\n```{code}```\r\n. Let me run that for you! 😊";
+                            messageText = $"Hey {mention.Text}, I see that you have written some code!\r\n I got: \r\n```{code}```\r\n Let me run that for you! 😊";
                         }
                         else
                         {
@@ -116,7 +116,7 @@ namespace CodeConversations.Bots
                         EnvelopeHelper.StoreEnvelope(submissionToken, envelope);
                         var cardSent = false;
                         channel
-                            .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(3)))
+                            .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(1)))
                             .Buffer(TimeSpan.FromSeconds(1))
                             .Subscribe(
                          onNext: async formattedValues =>
@@ -127,8 +127,25 @@ namespace CodeConversations.Bots
                                      if (formattedValues.Count > 0)
                                      {
                                          var hasHtml = formattedValues.Any(f => f.MimeType == HtmlFormatter.MimeType);
-
-                                         if (hasHtml)
+                                         if (hasHtml && formattedValues.Count == 1 && IsFormattedValueImage(formattedValues.ElementAt(0)))
+                                         {
+                                           string src = GetSrcFromImageHtml(formattedValues.ElementAt(0).Value);
+                                           var attachment = new Attachment
+                                           {
+                                             ContentType = "image/*",
+                                             ContentUrl = src,
+                                           };
+                                           var message = MessageFactory.Attachment(attachment);
+                                           context.SendActivityAsync(message, token).Wait();
+                                         }
+                                         else if (hasHtml && formattedValues.Count == 1 && IsFormattedValueClassification(formattedValues.ElementAt(0)))
+                                         {
+                                           var info = GetInfoFromClassificationHtml(formattedValues.ElementAt(0).Value);
+                                           var content = $"**Label**: _{info[0]}_\r\n\n**Confidence**: _{info[1]}_";
+                                           var message = MessageFactory.Text(content);
+                                           context.SendActivityAsync(message, token).Wait();
+                                         }
+                                         else if (hasHtml)
                                          {
                                              if (!cardSent)
                                              {
@@ -211,6 +228,16 @@ namespace CodeConversations.Bots
                             }, cancellationToken);
                     }
                 }
+                else if (content.Contains("Hello"))
+                {
+                    var mentioned = turnContext.Activity.GetMentions()?.FirstOrDefault(m => m.Mentioned.Id.EndsWith(_botId));
+                    if (mentioned != null)
+                    {
+                        var card = CardUtilities.CreateAdaptiveCardAttachment(CardJsonFiles.IntroduceRover);
+                        var attach = MessageFactory.Attachment(card);
+                        await turnContext.SendActivityAsync(attach, cancellationToken);
+                    }
+                }
             }
             else
             {
@@ -225,6 +252,51 @@ namespace CodeConversations.Bots
                         var languageLabel = ((JObject)userAction).Value<string>("languageLabel");
                         var message = MessageFactory.Text($"All set. Let's write some {DotNetInteractiveProcessRunner.Instance.SessionLanguage} code together! 🤘🏻");
                         await turnContext.SendActivityAsync(message, cancellationToken);
+                    }
+                }
+                else if (((JObject)userAction).Value<string>("userAction").Equals("BlinkLights"))
+                {
+                    if (DotNetInteractiveProcessRunner.Instance.CanExecuteCode)
+                    {
+                        var message = MessageFactory.Text("Blinking 💡...");
+                        await turnContext.SendActivityAsync(message, cancellationToken);
+
+                        var conversationReference = turnContext.Activity.GetConversationReference();
+                        var submissionToken = Guid.NewGuid().ToString("N");
+                        var submitCode = new SubmitCode("roverBody.BlinkAllLights();");
+
+                        submitCode.SetToken(submissionToken);
+                        var envelope = KernelCommandEnvelope.Create(submitCode);
+                        var channel = ContentSubjectHelper.GetOrCreateChannel(submissionToken);
+                        EnvelopeHelper.StoreEnvelope(submissionToken, envelope);
+
+                        channel
+                            .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(3)))
+                            .Buffer(TimeSpan.FromSeconds(1))
+                            .Subscribe(
+                               onNext: async formattedValues =>
+                               {
+                               },
+                               onCompleted: async () =>
+                               {
+                                   await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
+                                   {
+                                       await Task.Delay(2000);
+                                       var message = MessageFactory.Text($"Don't I look great! Ok, now let's write some C# code and show off what we can achieve together! 🤘🏻");
+                                       await context.SendActivityAsync(message, token);
+                                   }, cancellationToken);
+                               },
+                               onError: async error =>
+                               {
+                                   await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
+                                   {
+                                       await Task.Delay(1000);
+                                       var message = MessageFactory.Text($"Hmm, having trouble blinking my lights... 👎\r\n```{error.Message}```");
+                                       await context.SendActivityAsync(message, token);
+                                   }, cancellationToken);
+                               });
+
+                        await DotNetInteractiveProcessRunner.Instance.ExecuteEnvelope(submissionToken);
                     }
                 }
             }
@@ -281,6 +353,47 @@ namespace CodeConversations.Bots
             var matches = Regex.Matches(messageText, regularExpression, RegexOptions.Singleline);
             var result = matches.First().Groups[2].Value;
             return result.Replace("\u200B", "");
+        }
+
+        private bool IsFormattedValueImage(FormattedValue formattedValue)
+        {
+            string imageRegex = @"^<img";
+            if (!(formattedValue.Value is string))
+            {
+                return false;
+            }
+            var matches = Regex.Matches(formattedValue.Value, imageRegex, RegexOptions.Singleline);
+            return matches.Any();
+        }
+
+        private string GetSrcFromImageHtml(string imageHtml)
+        {
+            string srcRegex = "(src=\"(.*?)\")";
+            var matches = Regex.Matches(imageHtml, srcRegex, RegexOptions.Singleline);
+            var result = matches.First().Groups[2].Value;
+            Console.WriteLine(result);
+            return result;
+        }
+
+        private bool IsFormattedValueClassification(FormattedValue formattedValue)
+        {
+            string classRegex = @"<tr><th>Label</th><th>Confidence</th></tr>";
+            if (!(formattedValue.Value is string))
+            {
+                return false;
+            }
+            var matches = Regex.Matches(formattedValue.Value, classRegex, RegexOptions.Singleline);
+            return matches.Any();
+        }
+
+        private string[] GetInfoFromClassificationHtml(string classHtml)
+        {
+            string valueRegex = "(dni-plaintext\">(.*?)<)";
+            var matches = Regex.Matches(classHtml, valueRegex, RegexOptions.Singleline);
+            var label = matches.First().Groups[2].Value;
+            var confidence = matches.ElementAt(1).Groups[2].Value;
+            string[] result = {label, confidence};
+            return result;
         }
     }
 }

@@ -29,6 +29,7 @@ namespace CodeConversations.Workers
         {
             this.logger = logger;
             Instance = this;
+            this.SessionLanguage = "csharp";
         }
 
         public override async Task StartAsync(CancellationToken cancellationToken)
