@@ -28,7 +28,7 @@
     },
     {
       "type": "Action.Submit",
-      "title": "Clear My Brain State",
+      "title": "Clear My State",
       "data": {
         "userAction": "ResetClearBrain"
       }

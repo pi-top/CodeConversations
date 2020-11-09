@@ -329,10 +329,10 @@ namespace CodeConversations.Bots
                         var response = "";
                         if (isBody) {
                             code = "RoverBody.Reset();";
-                            response = "Ok, my body is refreshed, ready to get going again! 🧘 ";
+                            response = "Ok, my body is refreshed and I'm ready to get going again! 🧘 ";
                         } else if (isClear) {
                             code = "RoverBrain.ClearState();";
-                            response = "Ok, my mind is cleared, ready to get going again! 🧘 ";
+                            response = "Ok, my mind is cleared and I'm ready to get going again! 🧘 ";
                         } else {
                             code = "RoverBrain.Reset();";
                             response = "Wwhat happened... Who am I? Oh, hello everyone... Can you all remind me what I'm doing here?";
