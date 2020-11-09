@@ -25,6 +25,13 @@
       "data": {
         "userAction": "BlinkLights"
       }
+    },
+    {
+      "type": "Action.Submit",
+      "title": "Get Help",
+      "data": {
+        "userAction": "Help"
+      }
     }
   ],
   "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",

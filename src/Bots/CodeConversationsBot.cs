@@ -228,7 +228,11 @@ namespace CodeConversations.Bots
                             }, cancellationToken);
                     }
                 }
-                else if (content.Contains("Hello"))
+                else if (content.Contains("help"))
+                {
+                    await DoHelp(turnContext, cancellationToken, content);
+                }
+                else
                 {
                     var mentioned = turnContext.Activity.GetMentions()?.FirstOrDefault(m => m.Mentioned.Id.EndsWith(_botId));
                     if (mentioned != null)
@@ -237,105 +241,6 @@ namespace CodeConversations.Bots
                         var attach = MessageFactory.Attachment(card);
                         await turnContext.SendActivityAsync(attach, cancellationToken);
                     }
-                }
-                else if (content.Contains("help"))
-                {
-
-                    var helpTopic = GetHelpTopic(content);
-
-                    var helpCode = $@"
-                    using System.ComponentModel;
-                    using System;
-                    using System.Reflection;
-                    Console.WriteLine(""Properties: "");
-                    foreach(PropertyDescriptor descriptor in TypeDescriptor.GetProperties({helpTopic}))
-                    {{
-                            string name=descriptor.Name;
-                            // object value=descriptor.GetValue({helpTopic});
-                            Console.WriteLine(""  {{0}}"",name);
-                    }}
-                    Console.WriteLine(""Methods: "");
-                    foreach(MethodInfo method in {helpTopic}.GetType().GetMethods(BindingFlags.Static|BindingFlags.Instance|BindingFlags.Public))
-                    {{
-                            if (!char.IsLower(method.Name[0])) {{
-                                string name=method.Name;
-                                Console.WriteLine(""  {{0}}"",name);
-                            }}
-                    }}
-                    ";
-
-                    var submissionToken = Guid.NewGuid().ToString("N");
-                    var submitCode = new SubmitCode(helpCode);
-
-                    submitCode.SetToken(submissionToken);
-                    var envelope = KernelCommandEnvelope.Create(submitCode);
-                    var channel = ContentSubjectHelper.GetOrCreateChannel(submissionToken);
-                    EnvelopeHelper.StoreEnvelope(submissionToken, envelope);
-                    var cardSent = false;
-
-                    channel
-                        .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(1)))
-                        .Buffer(TimeSpan.FromSeconds(1))
-                        .Subscribe(
-                           onNext: async formattedValues =>
-                           {
-                               turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference,
-                                   (context, token) =>
-                                   {
-                                       if (formattedValues.Count > 0)
-                                       {
-                                           var hasHtml = formattedValues.Any(f => f.MimeType == HtmlFormatter.MimeType);
-                                           if (hasHtml)
-                                           {
-                                               if (!cardSent)
-                                               {
-                                                   cardSent = true;
-                                                   var card = new HeroCard
-                                                   {
-                                                       Title = "Your output is too awesome 😎",
-                                                       Subtitle = "Use the viewer to see it.",
-                                                       Buttons = new List<CardAction>
-                                                       {
-                                                          new TaskModuleAction("Open Viewer",
-                                                              new {data = submissionToken})
-                                                       },
-                                                   }.ToAttachment();
-                                                   var message = MessageFactory.Attachment(card);
-                                                   context.SendActivityAsync(message, token).Wait();
-                                               }
-                                           }
-                                           else
-                                           {
-                                               var content = string.Join("\r\n", formattedValues.Select(f => f.Value));
-                                               var message = MessageFactory.Text($"```\r\n{content}");
-                                               context.SendActivityAsync(message, token).Wait();
-                                           }
-                                       }
-
-                                       return Task.CompletedTask;
-                                   }, cancellationToken).Wait();
-                           }, onCompleted: async () =>
-                           {
-                               await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
-                               {
-                                   await Task.Delay(1000);
-                                   var message = MessageFactory.Text($"So, {mention.Text}, anything there look interesting to you?");
-                                   message.Entities.Add(mention);
-                                   await context.SendActivityAsync(message, token);
-                               }, cancellationToken);
-                           },
-                           onError: async error =>
-                           {
-                               await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
-                               {
-                                   await Task.Delay(1000);
-                                   var message = MessageFactory.Text($"Hate to break this to you {mention.Text}, but there were some issues... 👎\r\n```{error.Message}```");
-                                   message.Entities.Add(mention);
-                                   await context.SendActivityAsync(message, token);
-                               }, cancellationToken);
-                           });
-
-                        await DotNetInteractiveProcessRunner.Instance.ExecuteEnvelope(submissionToken);
                 }
             }
             else
@@ -397,6 +302,9 @@ namespace CodeConversations.Bots
 
                         await DotNetInteractiveProcessRunner.Instance.ExecuteEnvelope(submissionToken);
                     }
+                }
+                else if (((JObject)userAction).Value<string>("userAction").Equals("Help")) {
+                    await DoHelp(turnContext, cancellationToken, "");
                 }
             }
         }
@@ -499,8 +407,125 @@ namespace CodeConversations.Bots
         {
             string topicRegex = "(help (.*?)$)";
             var matches = Regex.Matches(content, topicRegex, RegexOptions.Singleline);
-            var result = matches.First().Groups[2].Value;
-            return result;
+            if (matches.Any()) {
+                var result = matches.First().Groups[2].Value;
+                return result;
+            } else {
+                return string.Empty;
+            }
+        }
+
+        private async Task DoHelp(ITurnContext turnContext, CancellationToken cancellationToken, string content)
+        {
+            var helpTopic = GetHelpTopic(content);
+            if (helpTopic == string.Empty) {
+                var message = MessageFactory.Text(
+@"\
+Rover capabilites are accessed through three objects:  
+`roverBody`, `resourceScanner` and `roverBrain`.
+<br/><br/>
+`roverBody` collects all the hardware components, such as `TiltController`, `Camera`, `MotionComponent`...
+<br/><br/>
+`resourceScanner` contains the image classification capabilites of the Rover, using Lobe machine learning models.
+<br/><br/>
+On `roverBrain` you can set behaviours for the Rover to run, by overrriding four functions:  
+- `Perceive`: The Perceive function runs first and is used to read from sensors, such as the Camera.
+- `Plan`: The Plan function runs next, where we do analysis to determine what actions to perform, such as image classification with `resourceScanner`.
+- `Act`: Act is run if the Plan doesn't return PlanningResult.NoPlan. Here we can take actions, such as flashing the lights if a resource is detected.
+- `React`: React runs independantly of the other brain functions, so can be used for backup functionality, such as safety systems.  
+
+
+<br/>
+To get more information on any object, ask me e.g.:  
+
+""@Rover help roverBody.Camera"".  
+
+<br/>
+
+You can also find more information in the <a href=""https://github.com/pi-top/pi-top-4-.NET-SDK/tree/master/src/Examples/PiTop.Interactive.Rover"">readme</a>.
+"                       );
+                await turnContext.SendActivityAsync(message, cancellationToken);
+            } else {
+                var helpCode = $@"
+                using System.ComponentModel;
+                using System;
+                using System.Reflection;
+                Console.WriteLine(""Properties: "");
+                foreach(PropertyDescriptor descriptor in TypeDescriptor.GetProperties({helpTopic}))
+                {{
+                        string name=descriptor.Name;
+                        // object value=descriptor.GetValue({helpTopic});
+                        Console.WriteLine(""  {{0}}"",name);
+                }}
+                Console.WriteLine(""Methods: "");
+                foreach(MethodInfo method in {helpTopic}.GetType().GetMethods(BindingFlags.Static|BindingFlags.Instance|BindingFlags.Public))
+                {{
+                        if (!char.IsLower(method.Name[0])) {{
+                            string name=method.Name;
+                            Console.WriteLine(""  {{0}}"",name);
+                        }}
+                }}
+                ";
+
+                var submissionToken = Guid.NewGuid().ToString("N");
+                var submitCode = new SubmitCode(helpCode);
+
+                submitCode.SetToken(submissionToken);
+                var envelope = KernelCommandEnvelope.Create(submitCode);
+                var channel = ContentSubjectHelper.GetOrCreateChannel(submissionToken);
+                EnvelopeHelper.StoreEnvelope(submissionToken, envelope);
+                var cardSent = false;
+
+                channel
+                    .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(1)))
+                    .Buffer(TimeSpan.FromSeconds(1))
+                    .Subscribe(
+                       onNext: async formattedValues =>
+                       {
+                           if (formattedValues.Count > 0)
+                           {
+                               var hasHtml = formattedValues.Any(f => f.MimeType == HtmlFormatter.MimeType);
+                               if (hasHtml)
+                               {
+                                   if (!cardSent)
+                                   {
+                                       cardSent = true;
+                                       var card = new HeroCard
+                                       {
+                                           Title = "Your output is too awesome 😎",
+                                           Subtitle = "Use the viewer to see it.",
+                                           Buttons = new List<CardAction>
+                                           {
+                                              new TaskModuleAction("Open Viewer",
+                                                  new {data = submissionToken})
+                                           },
+                                       }.ToAttachment();
+                                       var message = MessageFactory.Attachment(card);
+                                       await turnContext.SendActivityAsync(message, cancellationToken);
+                                   }
+                               }
+                               else
+                               {
+                                   var content = string.Join("\r\n", formattedValues.Select(f => f.Value));
+                                   var message = MessageFactory.Text($"```\r\n{content}");
+                                   await turnContext.SendActivityAsync(message,  cancellationToken);
+                               }
+                           }
+                       }, onCompleted: async () =>
+                       {
+                           await Task.Delay(1000);
+                           var message = MessageFactory.Text($"So, anything there look interesting to you?");
+                           await turnContext.SendActivityAsync(message, cancellationToken);
+                       },
+                       onError: async error =>
+                       {
+                           await Task.Delay(1000);
+                           var message = MessageFactory.Text($"There were some issues... 👎\r\n```{error.Message}```");
+                           await turnContext.SendActivityAsync(message, cancellationToken);
+                       });
+
+                await DotNetInteractiveProcessRunner.Instance.ExecuteEnvelope(submissionToken);
+            }
         }
     }
 }
