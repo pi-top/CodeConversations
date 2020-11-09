@@ -331,7 +331,7 @@ namespace CodeConversations.Bots
                             code = "RoverBody.Reset();";
                             response = "Ok, my body is refreshed, ready to get going again! 🧘 ";
                         } else if (isClear) {
-                            code = "RoverBrain.ClearState?.Invoke(RoverBody);";
+                            code = "RoverBrain.ClearState();";
                             response = "Ok, my mind is cleared, ready to get going again! 🧘 ";
                         } else {
                             code = "RoverBrain.Reset();";
@@ -488,18 +488,18 @@ namespace CodeConversations.Bots
             if (helpTopic == string.Empty) {
                 var message = MessageFactory.Text(
 @"\
-Rover capabilites are accessed through three objects:  
+Rover capabilities are accessed through three objects:  
 `RoverBody`, `ResourceScanner` and `RoverBrain`.
 <br/><br/>
 `RoverBody` collects all the hardware components, such as `TiltController`, `Camera`, `MotionComponent`...
 <br/><br/>
-`ResourceScanner` contains the image classification capabilites of the Rover, using Lobe machine learning models.
+`ResourceScanner` contains the image classification capabilities of the Rover, using Lobe machine learning models.
 <br/><br/>
-On `RoverBrain` you can set behaviours for the Rover to run, by overrriding four functions:  
+On `RoverBrain` you can set behaviours for the Rover to run, by overriding four functions:  
 - `Perceive`: The Perceive function runs first and is used to read from sensors, such as the Camera.
 - `Plan`: The Plan function runs next, where we do analysis to determine what actions to perform, such as image classification with `ResourceScanner`.
 - `Act`: Act is run if the Plan doesn't return PlanningResult.NoPlan. Here we can take actions, such as flashing the lights if a resource is detected.
-- `React`: React runs independantly of the other brain functions, so can be used for backup functionality, such as safety systems.  
+- `React`: React runs independently of the other brain functions, so can be used for backup functionality, such as safety systems.  
 
 
 <br/>
