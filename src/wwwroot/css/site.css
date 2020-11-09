@@ -1,7 +1,7 @@
 ﻿body {
-  background-color: rgb(73, 49, 222);
+  background-color: rgb(32, 182, 170);
   background: radial-gradient(
-      rgb(112, 20, 232), black 120%
+      rgb(97, 206 194), black 120%
     );
   background-size: contain;
   height: 100vh;
