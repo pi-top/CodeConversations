@@ -395,7 +395,7 @@ namespace CodeConversations.Bots
                     {
                         Height = "large",
                         Width = "large",
-                        Title = "Powered by .NET interactive aka.ms/codeconversations",
+                        Title = "Powered by .NET Interactive",
                         Url = url,
                         FallbackUrl = url
                     }
