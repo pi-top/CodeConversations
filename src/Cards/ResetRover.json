@@ -1,0 +1,46 @@
+{
+  "type": "AdaptiveCard",
+  "body": [
+    {
+      "type": "TextBlock",
+      "size": "Medium",
+      "weight": "Bolder",
+      "text": "What do I need to reset?"
+    },
+    {
+      "type": "Container",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "You can reset my body, clear my brain state, or reset my brain completely!",
+          "wrap": true
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "Reset My Body",
+      "data": {
+        "userAction": "ResetBody"
+      }
+    },
+    {
+      "type": "Action.Submit",
+      "title": "Clear My Brain State",
+      "data": {
+        "userAction": "ResetClearBrain"
+      }
+    },
+    {
+      "type": "Action.Submit",
+      "title": "Reset My Brain",
+      "data": {
+        "userAction": "ResetBrain"
+      }
+    }
+  ],
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.2"
+}

@@ -232,6 +232,16 @@ namespace CodeConversations.Bots
                 {
                     await DoHelp(turnContext, cancellationToken, content);
                 }
+                else if (content.Contains("reset"))
+                {
+                    var mentioned = turnContext.Activity.GetMentions()?.FirstOrDefault(m => m.Mentioned.Id.EndsWith(_botId));
+                    if (mentioned != null)
+                    {
+                        var card = CardUtilities.CreateAdaptiveCardAttachment(CardJsonFiles.ResetRover);
+                        var attach = MessageFactory.Attachment(card);
+                        await turnContext.SendActivityAsync(attach, cancellationToken);
+                    }
+                }
                 else
                 {
                     var mentioned = turnContext.Activity.GetMentions()?.FirstOrDefault(m => m.Mentioned.Id.EndsWith(_botId));
@@ -305,6 +315,63 @@ namespace CodeConversations.Bots
                 }
                 else if (((JObject)userAction).Value<string>("userAction").Equals("Help")) {
                     await DoHelp(turnContext, cancellationToken, "");
+                }
+                else if (((JObject)userAction).Value<string>("userAction").Contains("Reset"))
+                {
+                    if (DotNetInteractiveProcessRunner.Instance.CanExecuteCode)
+                    {
+                        var conversationReference = turnContext.Activity.GetConversationReference();
+                        var submissionToken = Guid.NewGuid().ToString("N");
+
+                        var isBody = ((JObject)userAction).Value<string>("userAction").Contains("Body");
+                        var isClear = ((JObject)userAction).Value<string>("userAction").Contains("Clear");
+                        var code = "";
+                        var response = "";
+                        if (isBody) {
+                            code = "RoverBody.Reset();";
+                            response = "Ok, my body is refreshed, ready to get going again! 🧘 ";
+                        } else if (isClear) {
+                            code = "RoverBrain.ClearState?.Invoke(RoverBody);";
+                            response = "Ok, my mind is cleared, ready to get going again! 🧘 ";
+                        } else {
+                            code = "RoverBrain.Reset();";
+                            response = "Wwhat happened... Who am I? Oh, hello everyone... Can you all remind me what I'm doing here?";
+                        }
+                        var submitCode = new SubmitCode(code);
+
+                        submitCode.SetToken(submissionToken);
+                        var envelope = KernelCommandEnvelope.Create(submitCode);
+                        var channel = ContentSubjectHelper.GetOrCreateChannel(submissionToken);
+                        EnvelopeHelper.StoreEnvelope(submissionToken, envelope);
+
+                        channel
+                            .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(3)))
+                            .Buffer(TimeSpan.FromSeconds(1))
+                            .Subscribe(
+                               onNext: async formattedValues =>
+                               {
+                               },
+                               onCompleted: async () =>
+                               {
+                                   await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
+                                   {
+                                       await Task.Delay(500);
+                                       var message = MessageFactory.Text(response);
+                                       await context.SendActivityAsync(message, token);
+                                   }, cancellationToken);
+                               },
+                               onError: async error =>
+                               {
+                                   await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
+                                   {
+                                       await Task.Delay(1000);
+                                       var message = MessageFactory.Text($"Hmm, having trouble resetting... 👎\r\n```{error.Message}```");
+                                       await context.SendActivityAsync(message, token);
+                                   }, cancellationToken);
+                               });
+
+                        await DotNetInteractiveProcessRunner.Instance.ExecuteEnvelope(submissionToken);
+                    }
                 }
             }
         }
