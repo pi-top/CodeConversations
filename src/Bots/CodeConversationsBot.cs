@@ -328,13 +328,13 @@ namespace CodeConversations.Bots
                         var code = "";
                         var response = "";
                         if (isBody) {
-                            code = "RoverBody.Reset();";
+                            code = "#!reset --body";
                             response = "Ok, my body is refreshed and I'm ready to get going again! 🧘 ";
                         } else if (isClear) {
-                            code = "RoverBrain.ClearState();";
+                            code = "#!reset --state";
                             response = "Ok, my mind is cleared and I'm ready to get going again! 🧘 ";
                         } else {
-                            code = "RoverBrain.Reset();";
+                            code = "#!reset --brain";
                             response = "Wwhat happened... Who am I? Oh, hello everyone... Can you all remind me what I'm doing here?";
                         }
                         var submitCode = new SubmitCode(code);
