@@ -267,7 +267,7 @@ namespace CodeConversations.Bots
 
                         var conversationReference = turnContext.Activity.GetConversationReference();
                         var submissionToken = Guid.NewGuid().ToString("N");
-                        var submitCode = new SubmitCode("roverBody.BlinkAllLights();");
+                        var submitCode = new SubmitCode("RoverBody.BlinkAllLights();");
 
                         submitCode.SetToken(submissionToken);
                         var envelope = KernelCommandEnvelope.Create(submitCode);
@@ -422,15 +422,15 @@ namespace CodeConversations.Bots
                 var message = MessageFactory.Text(
 @"\
 Rover capabilites are accessed through three objects:  
-`roverBody`, `resourceScanner` and `roverBrain`.
+`RoverBody`, `ResourceScanner` and `RoverBrain`.
 <br/><br/>
-`roverBody` collects all the hardware components, such as `TiltController`, `Camera`, `MotionComponent`...
+`RoverBody` collects all the hardware components, such as `TiltController`, `Camera`, `MotionComponent`...
 <br/><br/>
-`resourceScanner` contains the image classification capabilites of the Rover, using Lobe machine learning models.
+`ResourceScanner` contains the image classification capabilites of the Rover, using Lobe machine learning models.
 <br/><br/>
-On `roverBrain` you can set behaviours for the Rover to run, by overrriding four functions:  
+On `RoverBrain` you can set behaviours for the Rover to run, by overrriding four functions:  
 - `Perceive`: The Perceive function runs first and is used to read from sensors, such as the Camera.
-- `Plan`: The Plan function runs next, where we do analysis to determine what actions to perform, such as image classification with `resourceScanner`.
+- `Plan`: The Plan function runs next, where we do analysis to determine what actions to perform, such as image classification with `ResourceScanner`.
 - `Act`: Act is run if the Plan doesn't return PlanningResult.NoPlan. Here we can take actions, such as flashing the lights if a resource is detected.
 - `React`: React runs independantly of the other brain functions, so can be used for backup functionality, such as safety systems.  
 
@@ -438,7 +438,7 @@ On `roverBrain` you can set behaviours for the Rover to run, by overrriding four
 <br/>
 To get more information on any object, ask me e.g.:  
 
-""@Rover help roverBody.Camera"".  
+""@Rover help RoverBody.Camera"".  
 
 <br/>
 
