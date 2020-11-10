@@ -91,7 +91,7 @@ namespace CodeConversations.Bots
                         if (UserGame.CurrentChatUser?.Id != user.Id)
                         {
                             UserGame.CurrentChatUser = user;
-                            messageText = $"Hey {mention.Text}, I see that you have written some code!\r\n I got: \r\n```{code}```\r\n Let me run that for you! 😊";
+                            messageText = $"Hey {mention.Text}, I see that you have written some code! Let me run that for you! 😊";
                         }
                         else
                         {
