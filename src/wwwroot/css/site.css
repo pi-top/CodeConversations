@@ -10,7 +10,7 @@
   padding: 1.3rem;
   color: white;
   font: 1rem "Cascadia Code", Inconsolata, monospace;
-  text-shadow: 0 0 5px #C8C8C8;
+  text-shadow: 0 0 2px #CCCCCC;
   &::after {
     content: "";
     position: absolute;
