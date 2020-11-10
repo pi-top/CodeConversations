@@ -232,6 +232,16 @@ namespace CodeConversations.Bots
                 {
                     await DoHelp(turnContext, cancellationToken, content);
                 }
+                else if (content.Contains("reset"))
+                {
+                    var mentioned = turnContext.Activity.GetMentions()?.FirstOrDefault(m => m.Mentioned.Id.EndsWith(_botId));
+                    if (mentioned != null)
+                    {
+                        var card = CardUtilities.CreateAdaptiveCardAttachment(CardJsonFiles.ResetRover);
+                        var attach = MessageFactory.Attachment(card);
+                        await turnContext.SendActivityAsync(attach, cancellationToken);
+                    }
+                }
                 else
                 {
                     var mentioned = turnContext.Activity.GetMentions()?.FirstOrDefault(m => m.Mentioned.Id.EndsWith(_botId));
@@ -306,6 +316,63 @@ namespace CodeConversations.Bots
                 else if (((JObject)userAction).Value<string>("userAction").Equals("Help")) {
                     await DoHelp(turnContext, cancellationToken, "");
                 }
+                else if (((JObject)userAction).Value<string>("userAction").Contains("Reset"))
+                {
+                    if (DotNetInteractiveProcessRunner.Instance.CanExecuteCode)
+                    {
+                        var conversationReference = turnContext.Activity.GetConversationReference();
+                        var submissionToken = Guid.NewGuid().ToString("N");
+
+                        var isBody = ((JObject)userAction).Value<string>("userAction").Contains("Body");
+                        var isClear = ((JObject)userAction).Value<string>("userAction").Contains("Clear");
+                        var code = "";
+                        var response = "";
+                        if (isBody) {
+                            code = "RoverBody.Reset();";
+                            response = "Ok, my body is refreshed and I'm ready to get going again! 🧘 ";
+                        } else if (isClear) {
+                            code = "RoverBrain.ClearState();";
+                            response = "Ok, my mind is cleared and I'm ready to get going again! 🧘 ";
+                        } else {
+                            code = "RoverBrain.Reset();";
+                            response = "Wwhat happened... Who am I? Oh, hello everyone... Can you all remind me what I'm doing here?";
+                        }
+                        var submitCode = new SubmitCode(code);
+
+                        submitCode.SetToken(submissionToken);
+                        var envelope = KernelCommandEnvelope.Create(submitCode);
+                        var channel = ContentSubjectHelper.GetOrCreateChannel(submissionToken);
+                        EnvelopeHelper.StoreEnvelope(submissionToken, envelope);
+
+                        channel
+                            .Timeout(DateTimeOffset.UtcNow.Add(TimeSpan.FromMinutes(3)))
+                            .Buffer(TimeSpan.FromSeconds(1))
+                            .Subscribe(
+                               onNext: async formattedValues =>
+                               {
+                               },
+                               onCompleted: async () =>
+                               {
+                                   await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
+                                   {
+                                       await Task.Delay(500);
+                                       var message = MessageFactory.Text(response);
+                                       await context.SendActivityAsync(message, token);
+                                   }, cancellationToken);
+                               },
+                               onError: async error =>
+                               {
+                                   await turnContext.Adapter.ContinueConversationAsync(_botId, conversationReference, async (context, token) =>
+                                   {
+                                       await Task.Delay(1000);
+                                       var message = MessageFactory.Text($"Hmm, having trouble resetting... 👎\r\n```{error.Message}```");
+                                       await context.SendActivityAsync(message, token);
+                                   }, cancellationToken);
+                               });
+
+                        await DotNetInteractiveProcessRunner.Instance.ExecuteEnvelope(submissionToken);
+                    }
+                }
             }
         }
 
@@ -328,7 +395,7 @@ namespace CodeConversations.Bots
                     {
                         Height = "large",
                         Width = "large",
-                        Title = "Powered by .NET interactive aka.ms/codeconversations",
+                        Title = "Powered by .NET Interactive",
                         Url = url,
                         FallbackUrl = url
                     }
@@ -421,18 +488,18 @@ namespace CodeConversations.Bots
             if (helpTopic == string.Empty) {
                 var message = MessageFactory.Text(
 @"\
-Rover capabilites are accessed through three objects:  
+Rover capabilities are accessed through three objects:  
 `RoverBody`, `ResourceScanner` and `RoverBrain`.
 <br/><br/>
 `RoverBody` collects all the hardware components, such as `TiltController`, `Camera`, `MotionComponent`...
 <br/><br/>
-`ResourceScanner` contains the image classification capabilites of the Rover, using Lobe machine learning models.
+`ResourceScanner` contains the image classification capabilities of the Rover, using Lobe machine learning models.
 <br/><br/>
-On `RoverBrain` you can set behaviours for the Rover to run, by overrriding four functions:  
+On `RoverBrain` you can set behaviours for the Rover to run, by overriding four functions:  
 - `Perceive`: The Perceive function runs first and is used to read from sensors, such as the Camera.
 - `Plan`: The Plan function runs next, where we do analysis to determine what actions to perform, such as image classification with `ResourceScanner`.
 - `Act`: Act is run if the Plan doesn't return PlanningResult.NoPlan. Here we can take actions, such as flashing the lights if a resource is detected.
-- `React`: React runs independantly of the other brain functions, so can be used for backup functionality, such as safety systems.  
+- `React`: React runs independently of the other brain functions, so can be used for backup functionality, such as safety systems.  
 
 
 <br/>
